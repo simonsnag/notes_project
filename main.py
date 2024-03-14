@@ -1,20 +1,28 @@
-import uuid
+from datetime import datetime
+from enum import Enum
+from typing import List, Optional, Union
 
-from fastapi import Depends, FastAPI
-from fastapi_users import FastAPIUsers
-from app.auth.auth import auth_backend
-from app.auth.schemas import UserCreate, UserRead
-from app.auth.manager import get_user_manager
-from app.auth.manager import current_active_user
+from fastapi_users import fastapi_users, FastAPIUsers
+from pydantic import BaseModel, Field
 
-from app.auth.database import User
+from fastapi import FastAPI, Request, status, Depends
+from fastapi.encoders import jsonable_encoder
+from fastapi.responses import JSONResponse
 
-fastapi_users = FastAPIUsers[User, uuid.UUID](
+from auth.auth import auth_backend
+from auth.database import User
+from auth.manager import get_user_manager
+from auth.schemas import UserRead, UserCreate
+
+app = FastAPI(
+    title="Trading App"
+)
+
+fastapi_users = FastAPIUsers[User, int](
     get_user_manager,
     [auth_backend],
 )
 
-app = FastAPI()
 app.include_router(
     fastapi_users.get_auth_router(auth_backend),
     prefix="/auth/jwt",
@@ -27,6 +35,10 @@ app.include_router(
     tags=["auth"],
 )
 
-@app.get("/authenticated-route")
-async def authenticated_route(user: User = Depends(current_active_user)):
-    return {"message": f"Hello {user.email}!"}
+current_user = fastapi_users.current_user()
+
+@app.get("/auth-route")
+def protected_route(user: User = Depends(current_user)):
+    return f"Hello, {user.username}"
+
+

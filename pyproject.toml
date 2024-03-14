@@ -1,0 +1,26 @@
+[tool.poetry]
+name = "notes-project"
+version = "0.1.0"
+description = ""
+authors = ["simonsnag <simonsnag@gmail.com>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.10"
+sqlalchemy-utils = "^0.41.1"
+alembic = "^1.11.1"
+pydantic-settings = "^2.0.2"
+greenlet = "^2.0.2"
+httpx = "^0.24.1"
+uvicorn = "^0.23.2"
+fastapi-users = {extras = ["oauth", "sqlalchemy"], version = "^13.0.0"}
+fastapi = "^0.110.0"
+sqlalchemy = "^2.0.28"
+pydantic = "^2.6.4"
+uuid = "^1.30"
+asyncpg = "^0.29.0"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

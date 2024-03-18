@@ -2,19 +2,21 @@ import uuid
 from typing import Optional
 
 from fastapi_users import schemas
+from pydantic import EmailStr
 
 
-class UserRead(schemas.BaseUser[int]):
-    id: int
-    email: str
-    username: str
+class UserRead(schemas.BaseUser[uuid.UUID]):
+    id: uuid.UUID
+    email: EmailStr
+    user_name: str
 
     class Config:
         orm_mode = True
 
 
 class UserCreate(schemas.BaseUserCreate):
-    username: str
-    email: str
+    user_name: str
+    email: EmailStr
     password: str
+
 

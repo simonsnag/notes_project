@@ -1,23 +1,24 @@
-from typing import AsyncGenerator
+import asyncio
+from typing import AsyncGenerator, List
+import uuid
 
 from fastapi import Depends
-from fastapi_users.db import SQLAlchemyBaseUserTable, SQLAlchemyUserDatabase
+from fastapi_users.db import SQLAlchemyUserDatabase, SQLAlchemyBaseOAuthAccountTableUUID
+from fastapi_users_db_sqlalchemy import SQLAlchemyBaseUserTableUUID
+from pydantic import EmailStr
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
-from sqlalchemy.orm import sessionmaker, Mapped, mapped_column, DeclarativeBase
+from sqlalchemy.orm import sessionmaker, Mapped, mapped_column, relationship
+from sqlalchemy.ext.declarative import declarative_base, DeclarativeMeta
+from fastapi_users_db_sqlalchemy.generics import GUID
 
-from config import DB_HOST, DB_NAME, DB_PASS, DB_PORT, DB_USER
+from config import DataBaseSettings
+from models.models import OAuthAccount, User
 
+settings = DataBaseSettings()
 
-DATABASE_URL = f"postgresql+asyncpg://{DB_USER}:{DB_PASS}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
-class Base(DeclarativeBase):
-    pass
+DATABASE_URL = f"postgresql+asyncpg://{settings.USER}:{settings.PASS}@{settings.HOST}:{settings.PORT}/{settings.NAME}"
 
-
-class User(SQLAlchemyBaseUserTable[int], Base):
-    id: Mapped[int] = mapped_column(primary_key=True)
-    email: Mapped[str] = mapped_column(nullable=False)
-    username: Mapped[str]
-    hashed_password: Mapped[str]
+Base: DeclarativeMeta = declarative_base()
 
 
 engine = create_async_engine(DATABASE_URL)
@@ -30,4 +31,7 @@ async def get_async_session() -> AsyncGenerator[AsyncSession, None]:
 
 
 async def get_user_db(session: AsyncSession = Depends(get_async_session)):
-    yield SQLAlchemyUserDatabase(session, User)
+    yield SQLAlchemyUserDatabase(session, User, OAuthAccount)
+
+
+

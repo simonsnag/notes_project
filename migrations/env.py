@@ -4,7 +4,6 @@ from logging.config import fileConfig
 from sqlalchemy import pool
 from sqlalchemy.engine import Connection
 from sqlalchemy.ext.asyncio import async_engine_from_config
-from models.models import Base
 
 from alembic import context
 
@@ -19,9 +18,9 @@ if config.config_file_name is not None:
 
 # add your model's MetaData object here
 # for 'autogenerate' support
-# from myapp import mymodel
-# target_metadata = mymodel.Base.metadata
+from models.models import Base
 target_metadata = Base.metadata
+# target_metadata = None
 
 # other values from the config, defined by the needs of env.py,
 # can be acquired:
@@ -78,17 +77,10 @@ async def run_async_migrations() -> None:
     await connectable.dispose()
 
 
-def run_migrations_online():
-    """Run migrations in 'online' mode.
+def run_migrations_online() -> None:
+    """Run migrations in 'online' mode."""
 
-    """
-
-    connectable = config.attributes.get("connection", None)
-
-    if connectable is None:
-        asyncio.run(run_async_migrations())
-    else:
-        do_run_migrations(connectable)
+    asyncio.run(run_async_migrations())
 
 
 if context.is_offline_mode():

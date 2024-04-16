@@ -12,10 +12,9 @@ pydantic-settings = "^2.0.2"
 greenlet = "^2.0.2"
 httpx = "^0.24.1"
 uvicorn = "^0.23.2"
-fastapi-users = {extras = ["oauth", "sqlalchemy"], version = "^13.0.0"}
 fastapi = "^0.110.0"
 sqlalchemy = "^2.0.28"
-pydantic = "^2.6.4"
+pydantic = {extras = ["email"], version = "^2.6.4"}
 uuid = "^1.30"
 asyncpg = "^0.29.0"
 alembic = "^1.13.1"
@@ -25,8 +24,24 @@ pytest = "^8.1.1"
 passlib = "^1.7.4"
 python-jose = "^3.3.0"
 pytest-asyncio = "^0.23.6"
+python-selvpcclient = "^2.5.0"
+mypy = "^1.9.0"
+types-passlib = "^1.7.7.20240327"
+types-python-jose = "^3.3.4.20240106"
 
+
+[tool.poetry.group.dev.dependencies]
+ruff = "^0.3.4"
 
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
+
+[tool.mypy]
+plugins = [
+    "pydantic.mypy",
+]
+exclude = [
+    "alembic",
+    "tests"
+]

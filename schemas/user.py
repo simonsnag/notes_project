@@ -7,20 +7,17 @@ class UserReadSchema(BaseSchema):
     id: uuid.UUID
     email: EmailStr
     username: str
-    
+
     class Config:
         from_attributes = True
+
 
 class UserCreateSchema(BaseSchema):
     username: str
     email: EmailStr
     password: str
 
+
 class UserAuthSchema(BaseSchema):
     email: EmailStr
     password: str
-
-class UserDeleteSchema(BaseSchema):
-    email: EmailStr
-    password: str
-    

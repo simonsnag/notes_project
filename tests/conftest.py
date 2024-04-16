@@ -1,11 +1,9 @@
-"""Конфигурация для тестирования."""
 import uuid
 
 import pytest
-from fastapi.testclient import TestClient
 from httpx import AsyncClient
 from sqlalchemy import make_url, text
-from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
+from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sessionmaker
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import NullPool
 
@@ -15,6 +13,7 @@ from models.models import Base
 from settings import DataBaseSettings
 
 settings = DataBaseSettings()
+
 
 @pytest.fixture
 def test_db_name():
@@ -58,7 +57,7 @@ async def sa_engine_db_async(test_db_name):
 
 @pytest.fixture
 async def db(sa_engine_db_async):
-    async_session = sessionmaker(
+    async_session = async_sessionmaker(
         sa_engine_db_async,
         class_=AsyncSession,
         expire_on_commit=False,
@@ -70,19 +69,21 @@ async def db(sa_engine_db_async):
 
 @pytest.fixture
 async def patch_sessionmaker(db, monkeypatch) -> None:
-    def call(*args, **kwargs) -> AsyncSession:
+    app.dependency_overrides[get_async_session] = lambda: db
+
+    async def call(*args, **kwargs) -> AsyncSession:
         """Патч вызова sessionmaker.__call__(), который происходит в async_session(), in_transaction"""
-        return db
+        return await db
 
     monkeypatch.setattr(sessionmaker, "__call__", call)
 
 
 @pytest.fixture
 async def api_client(patch_sessionmaker) -> AsyncClient:
-    async with AsyncClient(app=app, base_url=f"https://test") as async_client:
+    async with AsyncClient(app=app, base_url="https://test") as async_client:
         yield async_client
 
 
 @pytest.fixture
 def anyio_backend():
-    return 'asyncio'
+    return "asyncio"

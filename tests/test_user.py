@@ -1,121 +1,133 @@
-from fastapi import HTTPException
 import pytest
-from sqlalchemy.ext.asyncio import AsyncSession
 
 from db.dal import UserDAL
-from schemas.user import UserAuthSchema, UserCreateSchema
-from tests.conftest import api_client
+from schemas.user import UserCreateSchema
 
 
 pytestmark = [pytest.mark.anyio]
 
 
-async def test_create_user(api_client, db: AsyncSession):
+async def test_create_user(api_client):
     user_create = {
-        "username": "sam",
-        "email": "sam@example.com",
-        "password": "sam"
-    }
-    
-    response = await api_client.post("/user/create", json=user_create)
-    assert response.status_code == 200 
-    assert response.json() == "Пользователь удачно зарегистрирован!"
-    
-    user_create = {
-        "username": "sammy",
-        "email": "sam@example.com",
-        "password": "sam"
+        "username": "samson",
+        "email": "samson@example.com",
+        "password": "samson",
     }
 
     response = await api_client.post("/user/create", json=user_create)
-    assert response.status_code == 409
-    assert response.json() == {"detail": "Пользователь с таким email уже существует."}
+    assert response.status_code == 200
+    assert response.json()["email"] == user_create["email"]
+    assert response.json()["username"] == user_create["username"]
+
+    user_create = {
+        "username": "samson2",
+        "email": "samson@example.com",
+        "password": "samson2",
+    }
+
+    response = await api_client.post("/user/create", json=user_create)
+    assert response.status_code == 401
+    assert response.json()["detail"] == "Пользователь с таким email уже существует."
+
+    user_create = {
+        "username": "samson",
+        "email": "samson@example.com",
+        "password": "sam",
+    }
+
+    response = await api_client.post("/user/create", json=user_create)
+    assert response.status_code == 401
+    assert response.json()["detail"] == "Пароль должен содержать минимум 6 символов."
+
 
 async def test_auth_user(api_client, db):
     user_dal = UserDAL(db)
-    user_create = UserCreateSchema(username="sam", email="sam@example.com", password="sam")
+    user_create = UserCreateSchema(
+        username="sam", email="sam@example.com", password="samsam"
+    )
     await user_dal.create_user(user_create)
-    user_auth = {
-        "email": "sam@example.com",
-        "password": "sam"
-    }
+    user_auth = {"email": "sam@example.com", "password": "samsam"}
 
     response = await api_client.post("/user/auth", json=user_auth)
     assert response.status_code == 200
-    assert response.json()["token_type"] == "bearer"
+    assert response.json()["Authorization"][:6] == "Bearer"
 
-    user_auth = {
-        "email": "sammym@example.com",
-        "password": "sam"
-    }
+    user_auth = {"email": "sammym@example.com", "password": "samsam"}
 
     response = await api_client.post("/user/auth", json=user_auth)
     assert response.status_code == 401
-    assert response.json()["detail"] == "Такого пользователя не существует"
+    assert response.json()["detail"] == "Пользователя с таким email не существует."
 
     user_auth = {
         "email": "sam@example.com",
-        "password": "sammmy"
+        "password": "sammmy",
     }
-    
+
     response = await api_client.post("/user/auth", json=user_auth)
     assert response.status_code == 401
-    assert response.json()["detail"] == "Неправильный пароль"
+    assert response.json()["detail"] == "Неправильный пароль."
 
 
 async def test_get_user_by_jwt(api_client, db):
     user_dal = UserDAL(db)
-    user_create = UserCreateSchema(username="sam", email="sam@example.com", password="sam")
+    user_create = UserCreateSchema(
+        username="sam", email="sam@example.com", password="samsam"
+    )
     await user_dal.create_user(user_create)
 
-    user_auth = {
-        "email": "sam@example.com",
-        "password": "sam"
-    }
+    user_auth = {"email": "sam@example.com", "password": "samsam"}
 
-    await api_client.post("/user/auth", json=user_auth)
+    response = await api_client.post("/user/auth", json=user_auth)
+    headers = response.json()
 
-    response = await api_client.get("/user/auth")
+    response = await api_client.get("/user/auth", headers=headers)
     assert response.status_code == 200
-    assert response.json() == user_auth["email"]
+    assert response.json()["email"] == user_auth["email"]
 
-    api_client.cookies.clear()
-    
-    response = await api_client.get("/user/auth")
+    user_dal = UserDAL(db)
+    user_create = UserCreateSchema(
+        username="sandy", email="sandy@example.com", password="sandyy"
+    )
+    await user_dal.create_user(user_create)
+
+    user_auth = {"email": "sandy@example.com", "password": "sandyy"}
+
+    response = await api_client.post("/user/auth", json=user_auth)
+    headers = {"Authorization": response.json()["Authorization"] + "q"}
+
+    response = await api_client.get("/user/auth", headers=headers)
     assert response.status_code == 401
     assert response.json()["detail"] == "Данный пользователь не прошел авторизацию."
 
 
 async def test_create_refresh_token(api_client, db):
     user_dal = UserDAL(db)
-    user_create = UserCreateSchema(username="sam", email="sam@example.com", password="sam")
+    user_create = UserCreateSchema(
+        username="sam", email="sam@example.com", password="samsam"
+    )
     await user_dal.create_user(user_create)
 
-    user_auth = {
-        "email": "sam@example.com",
-        "password": "sam"
-    }
+    user_auth = {"email": "sam@example.com", "password": "samsam"}
 
-    old_token = await api_client.post("/user/auth", json=user_auth)
-    old_token = old_token.json()["access_token"]
+    response = await api_client.post("/user/auth", json=user_auth)
+    old_token = response.json()["Authorization"][7:]
 
-    response = await api_client.post("/user/token/refresh")
+    response = await api_client.post("/user/token/refresh", headers=response.json())
     assert response.status_code == 200
-    assert response.json()["access_token"] != old_token
+    assert len(response.json()["Authorization"][7:]) == len(old_token)
+    assert response.json()["Authorization"][7:] != old_token
 
-    api_client.cookies.clear()
+    user_dal = UserDAL(db)
+    user_create = UserCreateSchema(
+        username="sandy", email="sandy@example.com", password="sandyy"
+    )
+    await user_dal.create_user(user_create)
 
-    response = await api_client.post("/user/token/refresh")
+    user_auth = {"email": "sandy@example.com", "password": "sandyy"}
+
+    response = await api_client.post("/user/auth", json=user_auth)
+    headers = {"Authorization": response.json()["Authorization"] + "q"}
+
+    response = await api_client.post("/user/token/refresh", headers=headers)
     assert response.status_code == 401
-    assert response.json()["detail"] == "Could not validate credentials"
-
-
-
-
-
-
-
-
-
-
-
+    assert response.json()["detail"] == "Не подходящие данные для авторизации."

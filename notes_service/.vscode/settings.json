@@ -1,7 +1,4 @@
 {
-    "python.analysis.extraPaths": [
-        "./notes_project"
-    ],
     "python.testing.pytestArgs": [
         "tests"
     ],
@@ -14,12 +11,11 @@
         "**/CVS": true,
         "**/.DS_Store": true,
         "**/Thumbs.db": true,
-        "**/.venv":true,
+        "**/.venv": true,
         "**/.mypy_cache": true,
         "**/.pytest_cache": true,
         "**/.ruff_cache": true,
         "**/__pycache__": true,
         "**/.vscode": true
-
     }
 }
